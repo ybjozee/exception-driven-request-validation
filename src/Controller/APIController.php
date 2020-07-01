@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Exception\MissingParameterException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -10,6 +11,7 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class APIController extends AbstractController
 {
+
     /**
      * @Route("/", name="api_index")
      */
@@ -28,34 +30,14 @@ class APIController extends AbstractController
      */
     public function register(Request $request)
     {
-        $firstName = $this->getParameterFromRequest('firstName', $request);
-        $middleName = $this->getParameterFromRequest('middleName', $request) ?? '';
-        $lastName = $this->getParameterFromRequest('lastName', $request);
-        $dateOfBirth = $this->getParameterFromRequest('dateOfBirth', $request);
-        $emailAddress = $this->getParameterFromRequest('emailAddress', $request);
-        $password = $this->getParameterFromRequest('password', $request);
         //assuming first name, last name, email address and password are required
+        $firstName = $this->getRequiredParameterFromRequest('firstName', $request);
+        $lastName = $this->getRequiredParameterFromRequest('lastName', $request);
+        $emailAddress = $this->getRequiredParameterFromRequest('emailAddress', $request);
+        $password = $this->getRequiredParameterFromRequest('password', $request);
+        $middleName = $request->request->get('middleName', $request) ?? '';
+        $dateOfBirth = $request->request->get('dateOfBirth', $request);
 
-        if (!$firstName) {
-            return $this->json([
-                'message' => 'firstName is required'
-            ], Response::HTTP_BAD_REQUEST);
-        }
-        if (!$lastName) {
-            return $this->json([
-                'message' => 'lastName is required'
-            ], Response::HTTP_BAD_REQUEST);
-        }
-        if (!$emailAddress) {
-            return $this->json([
-                'message' => 'emailAddress is required'
-            ], Response::HTTP_BAD_REQUEST);
-        }
-        if (!$password) {
-            return $this->json([
-                'message' => 'password is required'
-            ], Response::HTTP_BAD_REQUEST);
-        }
         return $this->json([
             'message' => 'User registered successfully',
             'data' => [
@@ -65,8 +47,10 @@ class APIController extends AbstractController
         ], Response::HTTP_CREATED);
     }
 
-    private function getParameterFromRequest(string $parameterName, Request $request)
+    private function getRequiredParameterFromRequest(string $parameterName, Request $request)
     {
-        return $request->request->get($parameterName);
+        $requiredParameter = $request->request->get($parameterName);
+        if (!$requiredParameter) throw new MissingParameterException("$parameterName is required");
+        return $requiredParameter;
     }
 }
